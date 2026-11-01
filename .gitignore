@@ -1,0 +1,10 @@
+# Keep local course inputs and generated artefacts out of the public repository
+data/*
+!data/README.md
+*.db
+*.csv
+*.xlsx
+*.pkl
+*.pth
+__pycache__/
+.ipynb_checkpoints/
