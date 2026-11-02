@@ -1,6 +1,6 @@
 # Biofuel Market Entry Strategy: Should Aether Energy Enter Biofuels?
 
-*Case competition exercise, team "CrossBridge". "Aether Energy" is a fictional oil & gas major used as the case subject; all market, regulatory and comparable-deal data below are drawn from public sources. I led the financial case (JV structuring, DCF/IRR modelling, capital affordability) and the risk assessment section; teammates led market/competitor analysis, value-chain/technical analysis, and the financing/due-diligence comparison — their names are not published here.*
+*Case competition exercise, team "CrossBridge". "Aether Energy" is a fictional oil & gas major used as the case subject; all market, regulatory and comparable-deal data below are drawn from public sources. I led market analysis, competitor benchmarking and market-sizing, and contributed to shaping the market-entry direction; teammates led the financial modelling (JV structuring, DCF/IRR, capital affordability), risk assessment, value-chain/technical analysis, and the financing/due-diligence comparison — their names are not published here.*
 
 ## Executive summary
 

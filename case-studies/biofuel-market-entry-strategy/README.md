@@ -6,7 +6,7 @@ A case competition brief: should a fictional oil & gas major, "Aether Energy", e
 
 ## Team
 
-Five-person case competition team, under the name "CrossBridge". I led the financial case (JV structuring, DCF/IRR modelling, capital affordability analysis) and contributed to the risk assessment; the remaining team members led market/competitor analysis, value-chain/technical analysis, and the financing/due-diligence sections. Teammates' names are not published here out of respect for their privacy; only my own contribution is attributed.
+Five-person case competition team, under the name "CrossBridge". I led market analysis, competitor benchmarking and market-sizing, and contributed to shaping the market-entry direction; teammates led the financial modelling (JV structuring, DCF/IRR), risk assessment, value-chain/technical analysis, and the financing/due-diligence comparison. Teammates' names are not published here out of respect for their privacy; only my own contribution is attributed.
 
 ## Approach
 
