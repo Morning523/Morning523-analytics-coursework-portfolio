@@ -8,5 +8,6 @@ Expected local inputs, if you have permission to use them:
 - `Q3.xlsx` — course workbook with `Ranking`, `jr`, and (for stadium assignment) `Capacity` sheets; used by two Python optimisation scripts.
 - `early_2012_2013_loan_sample_with_outcome.csv` — credit application DNN notebook.
 - `datafile_small.csv` — SVM notebook.
+- `london_underground_temperature.csv` — underground temperature statistics script, with `Temp`, `Line`, `Year`, `Month` columns.
 
 The synthetic coffee notebook generates a simulated dataset itself with Faker; its database and generated records are not included. No BT Group client data, internal business information, survey responses, or confidential materials are part of this repository.

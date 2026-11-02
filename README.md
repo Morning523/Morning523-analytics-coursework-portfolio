@@ -11,6 +11,7 @@ A curated selection of team coursework and analytical code from my MSc in Busine
 | [Credit risk modelling](projects/credit-risk-modelling/README.md) | How can application risk be modelled and compared across customer segments? A team DNN coursework case. | Python, PyTorch, scikit-learn |
 | [SVM classification](projects/svm-classification/README.md) | How do resampling, feature selection, and tuning affect an imbalanced classification workflow? | Python, scikit-learn, imbalanced-learn, Optuna |
 | [Statistical analysis](projects/statistical-analysis/README.md) | What relationships appear in household spending and podcast listening data? Regression, interaction analysis, and visualisation. | R, tidyverse, ggplot2 |
+| [Underground temperature statistics](projects/underground-temperature-statistics/README.md) | Does platform temperature differ by Underground line, and between Bakerloo and Central specifically? Individual R assessment. | R, tidyverse, ggplot2 |
 
 Three instructor-provided PyTorch notebooks are kept separately under [`reference/warwick-pytorch-course/`](reference/warwick-pytorch-course/). They are learning references, not original portfolio projects. Source and licence details are in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
@@ -22,7 +23,7 @@ Three instructor-provided PyTorch notebooks are kept separately under [`referenc
 
 ## Teamwork and AI assistance
 
-The analytics projects are coursework completed with teams and are labelled accordingly. I contributed substantially to the work; my earlier estimate of approximately 80–90% applies to coursework I previously described, not automatically to every notebook in this repository. I do not claim sole authorship of every file. The original R assessment declaration states that Gemini and ChatGPT supported code debugging, example approaches, and language polishing; those suggestions were interpreted and adapted for the coursework.
+Most analytics projects are coursework completed with teams and are labelled accordingly; the underground temperature statistics project is an individual assessment. I contributed substantially to the team work; my earlier estimate of approximately 80–90% applies to coursework I previously described, not automatically to every notebook in this repository. I do not claim sole authorship of every file. The original R assessment declaration states that Gemini and ChatGPT supported code debugging, example approaches, and language polishing; those suggestions were interpreted and adapted for the coursework.
 
 ## Data and reuse
 

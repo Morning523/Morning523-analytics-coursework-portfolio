@@ -7,3 +7,4 @@ Open a project page before browsing its code. Each page describes the question, 
 3. [Credit risk modelling](credit-risk-modelling/README.md) — team DNN case with data excluded.
 4. [SVM classification](svm-classification/README.md) — imbalance, feature selection, and tuning.
 5. [Statistical analysis](statistical-analysis/README.md) — R regression and visualisation.
+6. [Underground temperature statistics](underground-temperature-statistics/README.md) — individual R assessment, descriptive stats and t-tests.
