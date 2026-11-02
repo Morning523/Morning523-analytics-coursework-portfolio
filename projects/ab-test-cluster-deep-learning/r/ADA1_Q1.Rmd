@@ -1,0 +1,294 @@
+---
+title: "ADA Assignment – Q1: A/B Testing of Loan Review Policies"
+output: html_document
+date: "2026-02-12"
+---
+> **Portfolio note:** adapted for public portfolio use. The original LendingClub-derived dataset is not included; see [`../../../data/README.md`](../../../data/README.md) for expected inputs.
+
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+```
+
+## Import the Data
+
+```{r}
+data <- read_csv("data/early_2012_2013_loan_sample_with_outcome.csv")  # NOT INCLUDED, see ../../../data/README.md
+```
+
+```{r}
+str(data)
+summary(data)
+```
+
+## Check Missing Values
+
+```{r}
+na_count <- colSums(is.na(data))
+na_count[na_count > 0]
+```
+
+## Data Processing
+
+```{r}
+# Verify loan_is_bad coding
+table(data$loan_is_bad, useNA = "ifany")
+
+# Baseline bad rate
+overall_bad_rate <- mean(data$loan_is_bad, na.rm = TRUE)
+cat("Overall Bad Rate (Baseline):", round(overall_bad_rate * 100, 2), "%\n")
+
+# Pre-compute net_profit and credit loss at loan level
+data <- data %>%
+  mutate(
+    net_profit          = total_pymnt - funded_amnt,
+    individual_credit_loss = ifelse(net_profit < 0, -net_profit, 0)
+  )
+```
+
+---
+
+## Q1a. Policy Definition
+
+To address the business objective of minimising losses while maintaining profitability, we define two
+rule-based policies grounded in standard credit-risk practice:
+
+**Policy A (Conservative)**  
+Criteria: Grade A–C, DTI < 35, Delinquencies (2 yrs) = 0.  
+Targets "prime" borrowers only. A 35 % DTI threshold is a standard industry marker of financial
+headroom; zero recent delinquencies enforces strict credit-quality control.
+
+**Policy B (Aggressive)**  
+Criteria: Grade A–E, DTI < 50, Delinquencies (2 yrs) ≤ 2.  
+Extends credit to sub-prime borrowers (Grades D–E). A 50 % DTI is the regulatory ceiling for
+acceptable debt burden; allowing up to two recent delinquencies admits borrowers with minor credit
+blemishes. Policy B aims to maximise portfolio size and total interest income, relying on higher
+margins from Grades D–E to absorb elevated default losses.
+
+```{r}
+df <- data %>%
+  mutate(
+    approve_A = ifelse(grade %in% c("A","B","C") & dti < 35 & delinq_2yrs == 0,  1, 0),
+    approve_B = ifelse(grade %in% c("A","B","C","D","E") & dti < 50 & delinq_2yrs <= 2, 1, 0)
+  )
+
+cat("Policy A – approved loans:", sum(df$approve_A), "\n")
+cat("Policy B – approved loans:", sum(df$approve_B), "\n")
+cat("Total loans in dataset:   ", nrow(df), "\n")
+```
+
+---
+
+## Q1b. Evaluation Metric and Hypotheses
+
+### Overall Evaluation Criterion (OEC): Total Net Profit
+
+The primary evaluation criterion is **Total Net Profit**, defined as the sum of (amount received –
+amount funded) across all approved loans:
+
+$$\text{Total Net Profit} = \sum_{i \in \text{Approved}} (\text{total_pymnt}_i - \text{funded_amnt}_i)$$
+
+This metric directly captures the business objective: it rewards policies that generate high interest
+income and penalises policies that incur credit losses, all on a single monetary scale. A policy that
+approves many loans but suffers heavy defaults will show a lower (or negative) Net Profit, while one
+that is too conservative will also score poorly by forfeiting profitable loans.
+
+
+
+### Hypotheses
+
+$$H_0: \mu_{\text{Profit},A} = \mu_{\text{Profit},B}$$
+$$H_1: \mu_{\text{Profit},B} > \mu_{\text{Profit},A}$$
+
+where $\mu_{\text{Profit}}$ is the mean net profit per approved loan under each policy.  
+A one-sided Welch *t*-test is used because net profit is a continuous variable and population
+variances cannot be assumed equal.
+
+---
+
+## Q1c. Policy Comparison
+
+```{r}
+# ── Helper: business value summary ──────────────────────────────────────────
+calc_business_value <- function(df, approve_col, label) {
+  approved <- df %>% filter(.data[[approve_col]] == 1)
+  rejected <- df %>% filter(.data[[approve_col]] == 0)
+  rejected_good <- rejected %>% filter(loan_is_bad == 0)
+
+  tibble(
+    Policy           = label,
+    Total_Approved   = nrow(approved),
+    Approval_Rate    = nrow(approved) / nrow(df),
+    Bad_Rate         = mean(approved$loan_is_bad),
+    Total_Net_Profit = sum(approved$net_profit, na.rm = TRUE),
+    Mean_Net_Profit  = mean(approved$net_profit, na.rm = TRUE),
+    Credit_Loss_FN   = sum(approved$individual_credit_loss, na.rm = TRUE),
+    Opp_Cost_FP      = sum(rejected_good$net_profit, na.rm = TRUE)
+  )
+}
+
+perf_A    <- calc_business_value(df, "approve_A", "Policy A")
+perf_B    <- calc_business_value(df, "approve_B", "Policy B")
+perf_Base <- tibble(
+  Policy           = "Baseline (All Approved)",
+  Total_Approved   = nrow(df),
+  Approval_Rate    = 1,
+  Bad_Rate         = mean(df$loan_is_bad, na.rm = TRUE),
+  Total_Net_Profit = sum(df$net_profit, na.rm = TRUE),
+  Mean_Net_Profit  = mean(df$net_profit, na.rm = TRUE),
+  Credit_Loss_FN   = sum(df$individual_credit_loss, na.rm = TRUE),
+  Opp_Cost_FP      = 0
+)
+
+business_comparison <- bind_rows(perf_A, perf_B, perf_Base)
+print(business_comparison)
+```
+
+```{r}
+# ── Summary statistics ───────────────────────────────────────────────────────
+cat("=== Summary Statistics ===\n")
+cat(sprintf("Policy A – Approved: %d (%.1f%%), Bad Rate: %.2f%%, Total Net Profit: $%.2fM, Mean Net Profit: $%.0f\n",
+    perf_A$Total_Approved, perf_A$Approval_Rate*100,
+    perf_A$Bad_Rate*100,
+    perf_A$Total_Net_Profit/1e6,
+    perf_A$Mean_Net_Profit))
+
+cat(sprintf("Policy B – Approved: %d (%.1f%%), Bad Rate: %.2f%%, Total Net Profit: $%.2fM, Mean Net Profit: $%.0f\n",
+    perf_B$Total_Approved, perf_B$Approval_Rate*100,
+    perf_B$Bad_Rate*100,
+    perf_B$Total_Net_Profit/1e6,
+    perf_B$Mean_Net_Profit))
+
+cat(sprintf("\nProfit difference (B – A): $%.2fM\n",
+    (perf_B$Total_Net_Profit - perf_A$Total_Net_Profit)/1e6))
+cat(sprintf("Additional credit loss under B vs A: $%.2fM\n",
+    (perf_B$Credit_Loss_FN - perf_A$Credit_Loss_FN)/1e6))
+cat(sprintf("Opportunity cost avoided by B vs A:  $%.2fM\n",
+    (perf_A$Opp_Cost_FP - perf_B$Opp_Cost_FP)/1e6))
+```
+
+```{r}
+# ── One-sided Welch t-test on per-loan net profit (OEC) ─────────────────────
+profit_A <- df %>% filter(approve_A == 1) %>% pull(net_profit)
+profit_B <- df %>% filter(approve_B == 1) %>% pull(net_profit)
+
+t_result <- t.test(profit_B, profit_A,
+                   alternative = "greater",   # H1: mean profit B > mean profit A
+                   var.equal   = FALSE)
+print(t_result)
+
+cat(sprintf("\np-value: %.4f  |  Decision: %s\n",
+    t_result$p.value,
+    ifelse(t_result$p.value < 0.05,
+           "Reject H0 – Policy B generates significantly higher mean net profit",
+           "Fail to reject H0")))
+```
+
+```{r}
+# ── Confusion matrix (for reference; Positive = Default) ────────────────────
+# Convention used here: rejecting a loan = "predicting bad"
+# TP = Rejected & Bad  |  FP = Rejected & Good (opportunity cost)
+# TN = Approved & Good |  FN = Approved & Bad  (credit loss)
+
+calc_cm <- function(policy_decision, actual_bad) {
+  table(Decision = ifelse(policy_decision == 1, "Approved", "Rejected"),
+        Actual   = ifelse(actual_bad == 1, "Bad", "Good"))
+}
+
+cat("\nConfusion Matrix – Policy A\n")
+print(calc_cm(df$approve_A, df$loan_is_bad))
+
+cat("\nConfusion Matrix – Policy B\n")
+print(calc_cm(df$approve_B, df$loan_is_bad))
+```
+
+```{r fig.width=10, fig.height=4}
+# ── Visualisation 1a: Total Net Profit (OEC) ────────────────────────────────
+p_profit <- ggplot(business_comparison, aes(x = Policy, y = Total_Net_Profit / 1e6)) +
+  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8, width = 0.5) +
+  geom_text(aes(label = sprintf("$%.1fM", Total_Net_Profit / 1e6)),
+            vjust = -0.5, size = 3.5) +
+  labs(title    = "Figure 1a: Total Net Profit by Policy (OEC)",
+       subtitle = "Policy B generates the highest total net profit",
+       y = "Total Net Profit (USD Millions)", x = "Policy") +
+  theme_minimal()
+
+# ── Visualisation 1b: Bad Rate  ──────────────────────────────────
+p_badrate <- ggplot(business_comparison, aes(x = Policy, y = Bad_Rate)) +
+  geom_bar(stat = "identity", fill = "firebrick", alpha = 0.7, width = 0.5) +
+  geom_text(aes(label = sprintf("%.1f%%", Bad_Rate * 100)),
+            vjust = -0.5, size = 3.5) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title    = "Figure 1b: Bad Rate Comparison",
+       subtitle = "Policy B has a higher default rate risk monitoring required",
+       y = "Bad Rate", x = "Policy") +
+  theme_minimal()
+
+grid.arrange(p_profit, p_badrate, ncol = 2)
+```
+
+```{r}
+# ── Visualisation 2: Cost structure ─────────────────────────────────────────
+cost_data <- business_comparison %>%
+  filter(Policy %in% c("Policy A", "Policy B")) %>%
+  select(Policy, Opp_Cost_FP, Credit_Loss_FN) %>%
+  pivot_longer(-Policy, names_to = "Cost_Type", values_to = "Amount")
+
+p_costs <- ggplot(cost_data, aes(x = Policy, y = Amount / 1e6, fill = Cost_Type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(
+    values = c("Opp_Cost_FP" = "darkorange", "Credit_Loss_FN" = "darkred"),
+    labels = c("Opportunity Cost (rejected good loans)", "Credit Loss (approved defaults)")
+  ) + 
+  geom_text(aes(label = sprintf("$%.1fM", Amount / 1e6)),
+          position = position_dodge(width = 0.9),
+          vjust = -0.5, size = 3.5) +
+  labs(title    = "Figure 1c: Cost Structure: Opportunity Cost vs. Credit Loss",
+       subtitle = "Policy A sacrifices large opportunity cost to achieve lower credit loss",
+       y = "USD Millions", x = "Policy", fill = "Cost Type") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+print(p_costs)
+```
+
+### Interpretation
+
+**Statistical significance:** The one-sided Welch *t*-test shows that the mean net profit per approved
+loan under Policy B is significantly higher than under Policy A (*p* < 0.05), leading us to **reject
+H₀**.
+
+**Business interpretation:**
+
+- Policy B approves a substantially larger share of applicants, capturing profitable Grade D–E loans
+  that Policy A foregoes. The higher interest margins on these loans more than offset the additional
+  credit losses incurred.
+- Policy A's excessive conservatism incurs a large **opportunity cost** (profitable good loans
+  wrongly rejected), which more than negates its credit-loss savings.
+
+**Conclusion:** Policy B is preferred on the  OEC (Total Net Profit). Any deployment should
+be accompanied by portfolio-level Bad Rate ceilings as a risk guardrail.
+
+---
+
+## Q1d. Limitations
+
+1. **Survivorship bias:** The dataset includes only loans previously approved by LendingClub. We
+   cannot observe outcomes for applicants who were rejected historically but might qualify under
+   Policy B, so the true Bad Rate under Policy B may be underestimated.
+
+2. **No true randomisation:** This is a retrospective back-test, not a prospective RCT. Selection
+   effects mean that causal claims about policy outcomes are not warranted.
+
+3. **Static behaviour assumption:** The analysis assumes borrower behaviour is fixed. In practice,
+   a more permissive policy may attract riskier applicants through adverse selection, inflating the
+   real-world Bad Rate beyond what historical data suggests.
+
+4. **Temporal confounding:** Macroeconomic conditions (interest rates, unemployment) prevalent
+   during 2012–2013 may not persist, making extrapolation of profit estimates uncertain.
+
+5. **Single-period view:** Net profit as computed does not discount for the time value of money or
+   for the cost of capital, which may favour shorter-tenor loans unfairly.
+```
